@@ -1,0 +1,40 @@
+# When a PR updates HTML pipeline files, this workflow adds a security warning comment
+name: 'HTML Pipeline Security Warning'
+
+on:
+  pull_request:
+    paths:
+      - 'lib/github/html.rb'
+      - 'lib/github/goomba.rb'
+      - 'lib/github/html/sanitization_filter.rb'
+      - 'lib/github/unsullied/html/sanitization_filter.rb'
+      - 'lib/github/goomba/**/*.rb'
+      - 'lib/github/html/**/*.rb'
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  add-html-pipeline-security-warning:
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.actor, '[bot]') }}
+    
+    steps:
+      - uses: marocchino/sticky-pull-request-comment@331f8f5b4215f0445d3c07b4967662a32a2d3e31
+        name: 'Add HTML pipeline security warning'
+        with:
+          header: html-pipeline-security-warning
+          message: |
+            ## ⚠️ HTML Pipeline Security Warning
+
+            **It looks like this touches the GitHub::HTML pipeline.** Changes to our rendering of user-supplied markup could lead to cross-site scripting.
+
+            ### Security Guidelines:
+            - **Avoid manually building HTML** and instead use the APIs used in typical views such as `link_to`
+            - **Review the [HTML pipeline security guide](https://thehub.github.com/engineering/development-and-ops/secure-coding/secure-coding-dotcom/safely-use-pipelines/)** for more information
+
+            ### ⚠️ Important:
+            If this modifies the sanitization of our HTML pipeline, please ping **`@github/product-security-engineering`** for a second set of 👀
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

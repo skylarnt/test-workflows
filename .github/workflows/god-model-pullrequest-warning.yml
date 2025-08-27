@@ -1,0 +1,38 @@
+# When a PR updates the PullRequest model, this workflow adds a comment warning about modifying large models
+name: 'God Model Avoidance - PullRequest Warning'
+
+on:
+  pull_request:
+    paths:
+      - 'packages/pull_requests/app/models/pull_request.rb'
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  add-pullrequest-model-warning:
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.actor, '[bot]') }}
+    
+    steps:
+      - uses: marocchino/sticky-pull-request-comment@331f8f5b4215f0445d3c07b4967662a32a2d3e31
+        name: 'Add PullRequest model warning'
+        with:
+          header: god-model-pullrequest-warning
+          message: |
+            ## 🚨 PullRequest Model Warning
+
+            **It looks like you're modifying a REALLY BIG model.** We'd like to limit the code in the `PullRequest` model to functionality core to the model itself.
+
+            ### Recommendations:
+            - **If you are adding a new method**, consider whether it might be better in its own class
+            - **If it positively needs to be in the class**, consider moving it to a `*_dependency.rb` mixin whose SERVICEOWNER is set appropriately
+
+            ### Resources:
+            - 📖 [Tightening Code Ownership ADR](https://github.com/github/pull-requests/blob/main/adrs/20210217-tightening-codeownership.md)
+            - 💬 Ask in [**#pull-requests**](https://github-grid.enterprise.slack.com/archives/C02CN6WKQUW) for more information
+
+            **Note:** Class-level macros and constants, including scopes and AR callback registrations, are appropriate to add in the class file.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

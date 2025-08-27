@@ -1,0 +1,46 @@
+# When a PR updates deprecated method files, this workflow adds a security warning and requests review
+name: 'Deprecated Method Security Warning'
+
+on:
+  pull_request:
+    paths:
+      - '**/disable_backtick.rb'
+      - '**/disable_raw.rb'
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  add-deprecated-method-security-warning:
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.actor, '[bot]') }}
+    
+    steps:
+      - uses: marocchino/sticky-pull-request-comment@331f8f5b4215f0445d3c07b4967662a32a2d3e31
+        name: 'Add deprecated method security warning'
+        with:
+          header: deprecated-method-security-warning
+          message: |
+            ## 🔒 Deprecated Method Security Warning
+
+            **It looks like this touches the allowed list of unsafe deprecated methods.**
+
+            This should get a second set of 👀 from **`@github/product-security-engineering`**.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Request security team review
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              await github.rest.pulls.requestReviewers({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number,
+                team_reviewers: ['product-security-engineering']
+              });
+            } catch (error) {
+              console.log('Could not request team review:', error.message);
+            }
